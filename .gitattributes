@@ -1,0 +1,48 @@
+# ── Line-ending normalization ──────────────────────────────────────────────────
+# Store all text files with LF in the repo.
+# Git will convert to CRLF on checkout for Windows developers automatically.
+* text=auto eol=lf
+
+# ── Explicit text file declarations ───────────────────────────────────────────
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.mjs       text eol=lf
+*.cjs       text eol=lf
+*.json      text eol=lf
+*.jsonc     text eol=lf
+*.md        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.toml      text eol=lf
+*.env       text eol=lf
+*.env.*     text eol=lf
+*.html      text eol=lf
+*.css       text eol=lf
+*.xml       text eol=lf
+*.csv       text eol=lf
+*.txt       text eol=lf
+*.gitignore text eol=lf
+Dockerfile  text eol=lf
+*.sh        text eol=lf
+
+# Java (archive)
+*.java      text eol=lf
+*.pom       text eol=lf
+
+# ── Binary files (no conversion) ──────────────────────────────────────────────
+*.db        binary
+*.sqlite    binary
+*.sqlite3   binary
+*.duckdb    binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
+*.zip       binary
+*.gz        binary
+*.tar       binary
+*.pack      binary
+*.idx       binary

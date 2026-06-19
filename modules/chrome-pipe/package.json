@@ -1,0 +1,27 @@
+{
+  "name": "@crawl/chrome-pipe",
+  "version": "1.0.0",
+  "description": "MCP module: Claude in Chrome as fetch pipe, crawl engine as extraction brain. Chrome navigates and hands off HTML; this module extracts structured data — no server-side HTTP to the target domain.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "node --watch dist/index.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.0",
+    "@mozilla/readability": "^0.6.0",
+    "cheerio": "^1.2.0",
+    "jsdom": "^24.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^20.14.0",
+    "typescript": "^5.4.5"
+  }
+}

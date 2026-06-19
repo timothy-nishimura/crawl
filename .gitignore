@@ -1,0 +1,45 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
+dist/
+target/
+
+# ── Runtime / generated data ──────────────────────────────────────────────────
+# Crawl outputs — these are large and site-specific; store externally if needed
+manifests/
+data/
+# Client-specific configs (create your own; see configs/examples/ for reference)
+configs/*/
+!configs/examples/
+
+# ── Scratch ───────────────────────────────────────────────────────────────────
+scratch/
+
+# ── OS / editor noise ─────────────────────────────────────────────────────────
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editors
+*.swp
+*.swo
+.idea/
+.vscode/
+*.iml
+
+# ── Environment ───────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example

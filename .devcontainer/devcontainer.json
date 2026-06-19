@@ -1,0 +1,40 @@
+{
+  "name": "crawl-engine",
+
+  // Node 20 on Debian Bookworm — has gcc/g++ for native modules (better-sqlite3, duckdb)
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20-bookworm",
+
+  // ── Post-create setup ─────────────────────────────────────────────────────
+  // Runs once after the container is built.
+  // --with-deps installs Chromium + all system-level browser dependencies.
+  "postCreateCommand": "npm install && npx playwright install --with-deps chromium",
+
+  // ── Port forwarding ───────────────────────────────────────────────────────
+  // Makes MCP server ports available on localhost from the host machine.
+  "forwardPorts": [3001],
+  "portsAttributes": {
+    "3001": { "label": "MCP: crawler", "onAutoForward": "silent" },
+  },
+
+  // ── VS Code / Cursor customizations ──────────────────────────────────────
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next",   // TypeScript language service
+        "dbaeumer.vscode-eslint",              // ESLint inline errors
+        "esbenp.prettier-vscode",              // Prettier formatting
+        "ms-vscode.test-adapter-converter",   // Test explorer
+        "EditorConfig.EditorConfig"            // Respect .editorconfig if added
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "typescript.preferences.importModuleSpecifier": "relative",
+        "typescript.tsdk": "node_modules/typescript/lib"
+      }
+    }
+  },
+
+  // Run as the non-root node user (pre-created in the base image)
+  "remoteUser": "node"
+}

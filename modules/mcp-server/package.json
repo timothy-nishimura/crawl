@@ -1,0 +1,81 @@
+{
+    "name": "@crawl/mcp-server",
+    "version": "1.0.0",
+    "description": "MCP server that exposes the crawl engine as Claude tools.",
+    "type": "module",
+    "main": "./dist/index.js",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        },
+        "./extractors/SeoExtractor.js": {
+            "import": "./dist/extractors/SeoExtractor.js",
+            "types": "./dist/extractors/SeoExtractor.d.ts"
+        },
+        "./extractors/LinkExtractor.js": {
+            "import": "./dist/extractors/LinkExtractor.js",
+            "types": "./dist/extractors/LinkExtractor.d.ts"
+        },
+        "./extractors/MetaExtractor.js": {
+            "import": "./dist/extractors/MetaExtractor.js",
+            "types": "./dist/extractors/MetaExtractor.d.ts"
+        },
+        "./extractors/HeadingExtractor.js": {
+            "import": "./dist/extractors/HeadingExtractor.js",
+            "types": "./dist/extractors/HeadingExtractor.d.ts"
+        },
+        "./extractors/ImageExtractor.js": {
+            "import": "./dist/extractors/ImageExtractor.js",
+            "types": "./dist/extractors/ImageExtractor.d.ts"
+        },
+        "./extractors/SchemaExtractor.js": {
+            "import": "./dist/extractors/SchemaExtractor.js",
+            "types": "./dist/extractors/SchemaExtractor.d.ts"
+        },
+        "./backends/TlsFetchBackend.js": {
+            "import": "./dist/backends/TlsFetchBackend.js",
+            "types": "./dist/backends/TlsFetchBackend.d.ts"
+        },
+        "./lib/link-graph.js": {
+            "import": "./dist/lib/link-graph.js",
+            "types": "./dist/lib/link-graph.d.ts"
+        },
+        "./lib/fetch-utils.js": {
+            "import": "./dist/lib/fetch-utils.js",
+            "types": "./dist/lib/fetch-utils.d.ts"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "build:force": "tsc || true",
+        "build:watch": "tsc --watch",
+        "typecheck": "tsc --noEmit",
+        "start": "node dist/index.js",
+        "dev": "node --watch dist/index.js",
+        "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
+        "test:coverage": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --coverage"
+    },
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "dependencies": {
+        "@crawl/engine": "file:../../core",
+        "@modelcontextprotocol/sdk": "^1.10.0",
+        "@mozilla/readability": "^0.6.0",
+        "cheerio": "^1.2.0",
+        "express": "^4.19.2",
+        "got-scraping": "^4.0.0",
+        "jsdom": "^24.1.0",
+        "playwright": "^1.60.0",
+        "playwright-core": "^1.60.0",
+        "zod": "^3.23.8"
+    },
+    "devDependencies": {
+        "@types/express": "^4.17.21",
+        "@types/jsdom": "^21.1.7",
+        "@types/node": "^20.14.0",
+        "cross-env": "^10.1.0",
+        "typescript": "^5.4.5"
+    }
+}

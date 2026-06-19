@@ -1,0 +1,18 @@
+{
+  "seedUrl":         "https://example.com",
+  "label":           "Content discovery — blog and articles only",
+  "manifestPath":    "./manifests/example-com-content.json",
+  "dbPath":          "./data/frontier.db",
+  "indexPath":       "./manifests/manifest-index.json",
+  "maxDepth":        5,
+  "maxPages":        300,
+  "timeLimitSeconds": 1800,
+  "workers":         4,
+  "requestDelayMs":  500,
+  "includePatterns": ["/blog/", "/articles/", "/posts/", "/news/", "/resources/"],
+  "excludePatterns": ["/tag/", "/category/", "/author/", "/page/", "?"],
+  "crawlSubdomains": false,
+  "respectRobotsTxt": true,
+  "bypassBot":       false,
+  "seedFromSitemap": true
+}

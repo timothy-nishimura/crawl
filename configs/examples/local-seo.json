@@ -1,0 +1,18 @@
+{
+  "seedUrl":         "https://example.com",
+  "label":           "Local SEO — service and location pages",
+  "manifestPath":    "./manifests/example-com-local-seo.json",
+  "dbPath":          "./data/frontier.db",
+  "indexPath":       "./manifests/manifest-index.json",
+  "maxDepth":        4,
+  "maxPages":        200,
+  "timeLimitSeconds": 1800,
+  "workers":         3,
+  "requestDelayMs":  600,
+  "includePatterns": ["/services/", "/locations/", "/areas/", "/neighborhoods/", "/contact"],
+  "excludePatterns": ["/blog/", "/careers/", "/legal/", "/privacy/", "/wp-admin/"],
+  "crawlSubdomains": false,
+  "respectRobotsTxt": true,
+  "bypassBot":       false,
+  "seedFromSitemap": true
+}

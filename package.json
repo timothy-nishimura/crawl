@@ -1,0 +1,20 @@
+{
+  "name": "crawl-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plug-and-play crawl engine — core + modules.",
+  "workspaces": [
+    "core",
+    "modules/chrome-pipe",
+    "modules/mcp-test",
+    "modules/mcp-server"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

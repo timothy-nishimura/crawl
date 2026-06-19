@@ -1,0 +1,18 @@
+{
+  "seedUrl":         "https://example.com",
+  "label":           "Full site audit",
+  "manifestPath":    "./manifests/example-com-audit.json",
+  "dbPath":          "./data/frontier.db",
+  "indexPath":       "./manifests/manifest-index.json",
+  "maxDepth":        4,
+  "maxPages":        500,
+  "timeLimitSeconds": 3600,
+  "workers":         4,
+  "requestDelayMs":  500,
+  "includePatterns": [],
+  "excludePatterns": ["/careers/", "/legal/", "/privacy/", "/wp-admin/", "/wp-login/"],
+  "crawlSubdomains": false,
+  "respectRobotsTxt": true,
+  "bypassBot":       false,
+  "seedFromSitemap": true
+}
