@@ -7,9 +7,9 @@ import {
   FetchRequest,
   FetchResult,
   SsrfPolicy,
+  type FetchBackend,
 } from '@crawl/engine';
-import type { FetchBackend } from '@crawl/engine';
-import { TlsFetchBackend }   from '../backends/TlsFetchBackend.js';
+import { TlsFetchBackend }   from '@crawl/tls-backend';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

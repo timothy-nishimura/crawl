@@ -5,8 +5,7 @@ import {
   isCrawlManifest,
   isSitemapManifest,
 } from '../types/CrawlManifest.js';
-import type { SeoData }     from '../extractors/SeoExtractor.js';
-import type { MetaData }    from '../extractors/MetaExtractor.js';
+import type { SeoData, MetaData } from '@crawl/extractors';
 import { normalizeUrl }     from '../lib/link-graph.js';
 
 // ── Input schema ───────────────────────────────────────────────────────────────

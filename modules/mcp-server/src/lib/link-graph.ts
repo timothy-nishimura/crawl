@@ -19,8 +19,7 @@
  */
 
 import type { CrawlManifest } from '../types/CrawlManifest.js';
-import type { LinkData }      from '../extractors/LinkExtractor.js';
-import type { SeoData }       from '../extractors/SeoExtractor.js';
+import type { LinkData, SeoData } from '@crawl/extractors';
 
 // ── Public types ───────────────────────────────────────────────────────────────
 

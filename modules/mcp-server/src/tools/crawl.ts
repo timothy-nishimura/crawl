@@ -11,15 +11,17 @@ import {
 import { isSearchEngine, isJsGated } from '../lib/domain-hints.js';
 import type { FetchBackend }     from '@crawl/engine';
 import { FetchRequest, FetchResult } from '@crawl/engine';
-import { SeoExtractor }          from '../extractors/SeoExtractor.js';
-import type { SeoData }          from '../extractors/SeoExtractor.js';
-import { LinkExtractor }         from '../extractors/LinkExtractor.js';
-import type { LinkData }         from '../extractors/LinkExtractor.js';
-import { MetaExtractor }         from '../extractors/MetaExtractor.js';
-import { HeadingExtractor }      from '../extractors/HeadingExtractor.js';
-import { ImageExtractor }        from '../extractors/ImageExtractor.js';
-import { SchemaExtractor }       from '../extractors/SchemaExtractor.js';
-import { TlsFetchBackend }       from '../backends/TlsFetchBackend.js';
+import {
+  SeoExtractor,
+  LinkExtractor,
+  MetaExtractor,
+  HeadingExtractor,
+  ImageExtractor,
+  SchemaExtractor,
+  type SeoData,
+  type LinkData,
+} from '@crawl/extractors';
+import { TlsFetchBackend } from '@crawl/tls-backend';
 import {
   saveManifest,
   type CrawlManifest,

@@ -12,7 +12,7 @@ import {
   RateLimiter,
 } from '@crawl/engine';
 import { isSearchEngine, isJsGated } from '../lib/domain-hints.js';
-import { TlsFetchBackend }        from '../backends/TlsFetchBackend.js';
+import { TlsFetchBackend }        from '@crawl/tls-backend';
 import {
   fetchFollowingRedirects,
   isCloudflareBlock,

@@ -154,42 +154,54 @@ function resolveHostname(hostname: string): Promise<string> {
  * string (as returned by `dns.lookup` or `net.isIP`).
  */
 export function isPrivateAddress(ip: string): boolean {
-  // IPv6
   if (ip.includes(':')) {
     const lower = ip.toLowerCase();
-    // IPv4-mapped: ::ffff:192.168.x.x — check the v4 part
     if (lower.startsWith('::ffff:')) {
-      return isPrivateAddress(lower.slice(7));
+      const rest = lower.slice(7);
+      if (rest.includes('.')) {
+        return isPrivateAddress(rest);
+      }
+      const hexParts = rest.split(':');
+      if (hexParts.length === 2 && hexParts[0] && hexParts[1]) {
+        const p1 = parseInt(hexParts[0], 16);
+        const p2 = parseInt(hexParts[1], 16);
+        if (!isNaN(p1) && !isNaN(p2)) {
+          const v4 = `${(p1 >> 8) & 0xff}.${p1 & 0xff}.${(p2 >> 8) & 0xff}.${p2 & 0xff}`;
+          return isPrivateAddress(v4);
+        }
+      }
     }
     return (
-      lower === '::1'           ||   // loopback
-      lower === '::'            ||   // unspecified
-      lower.startsWith('fc')   ||   // ULA fc00::/7
-      lower.startsWith('fd')   ||   // ULA fd00::/8
-      lower.startsWith('fe80')      // link-local fe80::/10
+      lower === '::1' ||
+      lower === '::' ||
+      lower.startsWith('fc') ||
+      lower.startsWith('fd') ||
+      lower.startsWith('fe80') ||
+      lower.startsWith('ff') ||
+      lower.startsWith('2002:') ||
+      lower.startsWith('2001:0') ||
+      lower.startsWith('2001::')
     );
   }
 
-  // IPv4 — dotted-decimal only at this point (dns.lookup output)
   const parts = ip.split('.').map(Number);
   if (parts.length !== 4 || parts.some(p => isNaN(p) || p < 0 || p > 255)) {
-    // Malformed — treat as blocked to be safe
     return true;
   }
 
   const [a, b, c] = parts as [number, number, number, number];
 
   return (
-    a === 0                                    ||  // 0.0.0.0/8 reserved
-    a === 10                                   ||  // 10.0.0.0/8 RFC 1918
-    a === 127                                  ||  // 127.0.0.0/8 loopback
-    (a === 100 && b >= 64  && b <= 127)        ||  // 100.64.0.0/10 shared
-    (a === 169 && b === 254)                   ||  // 169.254.0.0/16 link-local
-    (a === 172 && b >= 16  && b <= 31)         ||  // 172.16.0.0/12 RFC 1918
-    (a === 192 && b === 0  && c === 2)         ||  // TEST-NET-1
-    (a === 192 && b === 168)                   ||  // 192.168.0.0/16 RFC 1918
-    (a === 198 && b === 51 && c === 100)       ||  // TEST-NET-2
-    (a === 203 && b === 0  && c === 113)       ||  // TEST-NET-3
-    a >= 240                                       // 240.0.0.0/4 reserved
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 0 && c === 2) ||
+    (a === 192 && b === 168) ||
+    (a === 198 && b === 51 && c === 100) ||
+    (a === 203 && b === 0 && c === 113) ||
+    a >= 224
   );
 }

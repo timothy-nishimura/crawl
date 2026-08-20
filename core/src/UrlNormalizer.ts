@@ -6,10 +6,12 @@
  * and removes default ports.
  */
 export class UrlNormalizer {
-  /** Session-parameter names that are stripped when `stripSessionParams` is true. */
-  private static readonly SESSION_PARAMS = new Set([
+  /** Session and marketing tracking parameter names that are stripped when `stripSessionParams` is true. */
+  private static readonly STRIP_PARAMS = new Set([
     'jsessionid', 'phpsessid', 'aspsessionid', 'sessionid',
     'sid', 'cfid', 'cftoken',
+    'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+    'gclid', 'fbclid', 'mc_eid', 'msclkid', 'dclid', 'yclid',
   ]);
 
   constructor(private readonly stripSessionParams: boolean = true) {}
@@ -51,14 +53,18 @@ export class UrlNormalizer {
     // Strip fragment
     resolved.hash = '';
 
-    // Strip session parameters
+    // Strip session and tracking parameters
     if (this.stripSessionParams) {
       for (const key of [...resolved.searchParams.keys()]) {
-        if (UrlNormalizer.SESSION_PARAMS.has(key.toLowerCase())) {
+        const lowerKey = key.toLowerCase();
+        if (UrlNormalizer.STRIP_PARAMS.has(lowerKey) || lowerKey.startsWith('utm_')) {
           resolved.searchParams.delete(key);
         }
       }
     }
+
+    // Alphabetically sort query parameters for deterministic frontier deduplication
+    resolved.searchParams.sort();
 
     // Normalise path: collapse double-slashes, remove trailing slash
     // (except root path which stays as "/")

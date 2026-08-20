@@ -10,6 +10,7 @@ import type { Frontier, FrontierEntry } from './Frontier.js';
  */
 export class InMemoryFrontier implements Frontier {
   private readonly queue:    FrontierEntry[] = [];
+  private headIndex = 0;
   private readonly seen:     Set<string>     = new Set();
   private readonly inFlight: Set<string>     = new Set();
 
@@ -24,8 +25,17 @@ export class InMemoryFrontier implements Frontier {
   }
 
   next(): FrontierEntry | null {
-    const entry = this.queue.shift();
+    if (this.headIndex >= this.queue.length) {
+      return null;
+    }
+    const entry = this.queue[this.headIndex++];
     if (!entry) return null;
+
+    if (this.headIndex > 10_000 && this.headIndex > (this.queue.length >> 1)) {
+      this.queue.splice(0, this.headIndex);
+      this.headIndex = 0;
+    }
+
     this.inFlight.add(entry.url);
     return entry;
   }
@@ -35,10 +45,10 @@ export class InMemoryFrontier implements Frontier {
   }
 
   isDrained(): boolean {
-    return this.queue.length === 0 && this.inFlight.size === 0;
+    return (this.queue.length - this.headIndex === 0) && this.inFlight.size === 0;
   }
 
-  queueSize():     number { return this.queue.length; }
+  queueSize():     number { return this.queue.length - this.headIndex; }
   inFlightCount(): number { return this.inFlight.size; }
 }
 

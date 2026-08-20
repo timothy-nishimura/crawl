@@ -50,13 +50,22 @@ describe('isPrivateAddress', () => {
   it('blocks fc00::1 (ULA fc00::/7)',        () => expect(isPrivateAddress('fc00::1')).toBe(true));
   it('blocks fd12:3456:789a::1 (ULA)',       () => expect(isPrivateAddress('fd12:3456:789a::1')).toBe(true));
   it('blocks fe80::1 (link-local)',          () => expect(isPrivateAddress('fe80::1')).toBe(true));
+  it('blocks ff02::1 (IPv6 multicast)',      () => expect(isPrivateAddress('ff02::1')).toBe(true));
+  it('blocks 2002:c000:0201:: (6to4)',       () => expect(isPrivateAddress('2002:c000:0201::')).toBe(true));
+  it('blocks 2001:0000:4136:e378:8000:63bf:3fff:fdd2 (Teredo)', () => expect(isPrivateAddress('2001:0000:4136:e378:8000:63bf:3fff:fdd2')).toBe(true));
   it('allows 2001:4860:4860::8888 (Google)', () => expect(isPrivateAddress('2001:4860:4860::8888')).toBe(false));
+
+  // ── Multicast ────────────────────────────────────────────────────────────
+  it('blocks 224.0.0.1 (IPv4 multicast)',    () => expect(isPrivateAddress('224.0.0.1')).toBe(true));
+  it('blocks 239.255.255.250 (IPv4 multicast)', () => expect(isPrivateAddress('239.255.255.250')).toBe(true));
 
   // ── IPv4-mapped IPv6 ─────────────────────────────────────────────────────
   it('blocks ::ffff:127.0.0.1 (IPv4-mapped loopback)',
     () => expect(isPrivateAddress('::ffff:127.0.0.1')).toBe(true));
   it('blocks ::ffff:192.168.1.1 (IPv4-mapped RFC1918)',
     () => expect(isPrivateAddress('::ffff:192.168.1.1')).toBe(true));
+  it('blocks ::ffff:7f00:1 (IPv4-mapped hex loopback)',
+    () => expect(isPrivateAddress('::ffff:7f00:1')).toBe(true));
   it('allows ::ffff:1.1.1.1 (IPv4-mapped public)',
     () => expect(isPrivateAddress('::ffff:1.1.1.1')).toBe(false));
 

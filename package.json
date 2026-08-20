@@ -5,6 +5,8 @@
   "description": "Plug-and-play crawl engine — core + modules.",
   "workspaces": [
     "core",
+    "modules/extractors",
+    "modules/tls-backend",
     "modules/chrome-pipe",
     "modules/mcp-test",
     "modules/mcp-server"

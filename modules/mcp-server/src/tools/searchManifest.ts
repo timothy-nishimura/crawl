@@ -7,7 +7,7 @@ import {
   type CrawlManifestPage,
   type SitemapEntry,
 } from '../types/CrawlManifest.js';
-import type { SeoData }    from '../extractors/SeoExtractor.js';
+import type { SeoData } from '@crawl/extractors';
 
 // ── Flag computation ───────────────────────────────────────────────────────────
 

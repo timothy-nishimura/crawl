@@ -1,0 +1,27 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies & build outputs
+node_modules
+**/node_modules
+dist
+**/dist
+
+# Temporary & session storage
+data/
+manifests/
+scratch/
+logs/
+*.log
+*.sqlite
+*.sqlite3
+*.db
+*.duckdb
+
+# OS / Editor artifacts
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+*.swp

@@ -19,28 +19,40 @@ export class Security {
    * @returns The absolute, sanitized path.
    * @throws Error if the path is unsafe.
    */
-  static sandboxPath(userPath: string, sandboxDir?: string): string {
-    const envScratch = process.env['SCRATCH_DIR'];
-    const root = resolve(sandboxDir || envScratch || './scratch');
-    
-    // Ensure the sandbox root exists
-    try {
-      mkdirSync(root, { recursive: true });
-    } catch (err) {
-      // Ignore if it already exists or if we can't create it (the later check will fail anyway)
+  static sandboxPath(userPath: string, sandboxDir?: string | string[]): string {
+    const defaultRoots = [
+      process.env['SCRATCH_DIR'] || './scratch',
+      process.env['MANIFESTS_DIR'] || './manifests',
+      process.env['DATA_DIR'] || './data',
+    ];
+
+    const targetRoots = Array.isArray(sandboxDir)
+      ? sandboxDir
+      : sandboxDir
+      ? [sandboxDir]
+      : defaultRoots;
+
+    const resolvedRoots = targetRoots.map(r => resolve(r));
+
+    for (const root of resolvedRoots) {
+      try {
+        mkdirSync(root, { recursive: true });
+      } catch {
+        // Ignore existing directory or permission error
+      }
     }
 
-    const absolute = resolve(root, userPath);
+    const candidate = resolve(resolvedRoots[0] ?? '.', userPath);
 
-    // Ensure the resolved path starts with the root path
-    const rel = relative(root, absolute);
-    const isInside = rel && !rel.startsWith('..') && !normalize(rel).startsWith('..');
-
-    if (!isInside && absolute !== root) {
-      throw new Error(`Security Violation: Path traversal detected or path outside sandbox: ${userPath}`);
+    for (const root of resolvedRoots) {
+      const rel = relative(root, candidate);
+      const isInside = (rel === '' || (!rel.startsWith('..') && !normalize(rel).startsWith('..')));
+      if (isInside) {
+        return candidate;
+      }
     }
 
-    return absolute;
+    throw new Error(`Security Violation: Path traversal detected or path outside sandbox: ${userPath}`);
   }
 
   /**

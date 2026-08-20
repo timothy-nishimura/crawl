@@ -284,6 +284,12 @@ describe('UrlNormalizer', () => {
     expect(result).toContain('q=test');
   });
 
+  it('strips tracking parameters and sorts query params', () => {
+    const url = 'https://example.com/page?utm_source=google&b=2&utm_medium=cpc&a=1&gclid=xyz';
+    const result = norm.resolve('https://example.com/', url);
+    expect(result).toBe('https://example.com/page?a=1&b=2');
+  });
+
   it('returns null for non-http/https schemes', () => {
     expect(norm.resolve('https://example.com/', 'mailto:user@example.com')).toBeNull();
     expect(norm.resolve('https://example.com/', 'javascript:void(0)')).toBeNull();

@@ -6,7 +6,7 @@ import {
   FetchResult,
   SsrfPolicy,
 } from '@crawl/engine';
-import { TlsFetchBackend }  from '../backends/TlsFetchBackend.js';
+import { TlsFetchBackend }  from '@crawl/tls-backend';
 import {
   saveManifest,
   type SitemapManifest,

@@ -23,7 +23,7 @@ import {
   SsrfPolicy,
   Security,
 } from '@crawl/engine';
-import { TlsFetchBackend }       from '../backends/TlsFetchBackend.js';
+import { TlsFetchBackend }       from '@crawl/tls-backend';
 import {
   fetchFollowingRedirects,
   fetchOnce,

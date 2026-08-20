@@ -6,8 +6,7 @@ import {
   isSitemapManifest,
   type CrawlManifestPage,
 } from '../types/CrawlManifest.js';
-import type { SeoData }   from '../extractors/SeoExtractor.js';
-import type { LinkData }  from '../extractors/LinkExtractor.js';
+import type { SeoData, LinkData } from '@crawl/extractors';
 
 // ── Input schema ───────────────────────────────────────────────────────────────
 

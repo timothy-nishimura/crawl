@@ -1,8 +1,7 @@
 import { z }              from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { loadManifest, isCrawlManifest } from '../types/CrawlManifest.js';
-import type { HeadingData } from '../extractors/HeadingExtractor.js';
-import type { SeoData }     from '../extractors/SeoExtractor.js';
+import type { HeadingData, SeoData } from '@crawl/extractors';
 
 // ── Input schema ───────────────────────────────────────────────────────────────
 
