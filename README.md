@@ -4,89 +4,67 @@
 [![Node.js 20+](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
 [![No Maintenance Intended](https://unmaintained.tech/badge.svg)](https://unmaintained.tech/)
 
-> Released as an open-source snapshot for the community to use and build on. This codebase is not actively maintained -- issues and pull requests are not monitored. Fork freely under the MIT license.
+> Released as an open-source snapshot for the community to use and build on. This codebase is not actively maintained — issues and pull requests are not monitored. Fork freely under the MIT license.
 
-A production-grade, embeddable web crawler for TypeScript/Node.js. Plug it into any tool that needs to walk a site and get back a stream of rich page snapshots - SEO auditors, broken-link checkers, content monitors, competitive intelligence tools.
-
-The engine has no UI, no storage, and no built-in reports. It produces `PageSnapshot` records as it crawls.
+A modular, embeddable web crawler and MCP server toolkit for TypeScript/Node.js. Designed for crawl automation, SEO analysis, metadata extraction, and site auditing.
 
 ---
 
-## Project layout
+## Project Layout
 
 ```
 crawl-engine/
-├── core/                   @crawl/engine - pure crawl engine, no interface opinions
+├── core/                   @crawl/engine — core crawling kernel, frontier & security
 ├── modules/
-│   ├── chrome-pipe/        @crawl/chrome-pipe - Chrome as fetch pipe, crawler as extraction brain
-│   ├── mcp-test/           @crawl/mcp-test - minimal 3-tool MCP server for smoke testing
-│   └── mcp-server/         @crawl/mcp-server - full MCP server with crawl, fetch, and analysis tools
-├── configs/
-│   └── examples/           reference configs (full-site-audit, content-discovery, local-seo)
-├── scratch/                file output sandbox (gitignored)
+│   ├── extractors/         @crawl/extractors — SEO, metadata, links, headings, schema, images
+│   ├── tls-backend/        @crawl/tls-backend — TLS-fingerprinted fetch with socket SSRF defense
+│   ├── chrome-pipe/        @crawl/chrome-pipe — Chrome-assisted extraction pipe
+│   ├── mcp-server/         @crawl/mcp-server — production HTTP/SSE MCP server
+│   └── mcp-test/           @crawl/mcp-test — smoke testing MCP server
+├── docker-compose.yml      Docker Compose configuration
+├── .env.example            Environment configuration template
+└── scratch/                Sandbox output directory (gitignored)
 ```
 
-**Dependency rule:** `core` imports nothing from this repo. `modules` import from `core` only. `configs` are data - no imports. The arrow always points inward.
+**Architecture rule:** `@crawl/engine` has zero internal dependencies. Domain packages (`@crawl/extractors`, `@crawl/tls-backend`) build on the engine. User-facing applications (`@crawl/mcp-server`) assemble components into tools.
 
 ---
 
-## Quick start
+## Quick Start
 
 **Requirements:** Node.js 20+
 
-### Dev container (recommended for any OS)
-
-The repo includes a `.devcontainer/` config for VS Code and Cursor. Opening the repo in a dev container gives you a Linux environment with Node 20, native module compilation, and Playwright pre-installed - no local setup required.
-
-1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-2. In VS Code / Cursor: **Reopen in Container** (or `Dev Containers: Clone Repository in Container Volume` from the command palette)
-3. `npm install` and `npx playwright install` run automatically on first build
-
-Ports 3001 and 3002 are forwarded to localhost automatically.
-
-### Windows setup (one-time, if developing outside the dev container)
+### Local Setup
 
 ```bash
-# Allow deep node_modules paths (Windows has a 260-char path limit by default)
-git config core.longpaths true
+# Install workspace dependencies
+npm install
 
-# Normalize file modes - Windows doesn't have Unix exec bits, so without this
-# every file will appear modified after a Mac/Linux collaborator touches the repo
-git config core.fileMode false
-```
-
-Line endings are handled automatically via `.gitattributes` (LF in the repo, CRLF on checkout for Windows). You don't need to set `core.autocrlf` manually.
-
-### Install
-
-```bash
-npm install          # installs all workspaces from the root
-```
-
-### Build
-
-```bash
-npm run build -w core
-npm run build -w modules/mcp-server
-```
-
-Or build everything at once:
-
-```bash
+# Build all packages
 npm run build --workspaces --if-present
+
+# Run all test suites
+npm run test --workspaces --if-present
 ```
 
-### Test
+### Docker Deployment
 
 ```bash
-npm run test -w core
+# Copy example environment
+cp .env.example .env
+
+# Build and start container
+docker compose up -d
+
+# Check health endpoint
+curl http://localhost:3001/health
 ```
 
 ---
 
-## Core engine (`core/`)
+## Core Engine (`core/`)
 
-### Programmatic usage
+### Basic Crawl
 
 ```ts
 import {
@@ -96,7 +74,6 @@ import {
   SsrfPolicy,
 } from '@crawl/engine';
 
-// Use HttpClientBackend for standard sites, or PlaywrightFetchBackend for JS-rendered SPAs
 const backend = new HttpClientBackend(SsrfPolicy.BLOCK_PRIVATE);
 
 const config = CrawlConfig.builder('https://example.com')
@@ -110,20 +87,7 @@ for await (const page of new CrawlEngine(config, backend, []).crawl()) {
 }
 ```
 
-### Narrow scope with patterns
-
-```ts
-const config = CrawlConfig.builder('https://example.com/blog')
-  .maxDepth(5)
-  .includePattern('/blog/')    // only follow URLs containing /blog/
-  .excludePattern('/tag/')     // skip tag archive pages
-  .excludePattern('?page=')    // skip pagination
-  .requestDelayMs(500)
-  .jitterPct(20)               // ±20% randomisation per request
-  .build();
-```
-
-### Custom extractor
+### Custom Extractor
 
 ```ts
 import type { Extractor, ParsedPage } from '@crawl/engine';
@@ -137,9 +101,9 @@ class SchemaExtractor implements Extractor<SchemaSignals> {
   readonly id = 'schema.jsonld';
 
   extract(page: ParsedPage): SchemaSignals | null {
-    if (!page.isHtml) return null;
-    const blocks = page.$('script[type="application/ld+json"]')
-      .map((_, el) => page.$(el).html() ?? '')
+    if (!page.document) return null;
+    const blocks = page.document('script[type="application/ld+json"]')
+      .map((_, el) => page.document?.(el).html() ?? '')
       .get();
     return {
       jsonLdBlocks: blocks,
@@ -147,288 +111,78 @@ class SchemaExtractor implements Extractor<SchemaSignals> {
     };
   }
 }
-
-const engine = new CrawlEngine(config, backend, [new SchemaExtractor()]);
-
-for await (const page of engine.crawl()) {
-  const signals = page.extraction<SchemaSignals>('schema.jsonld');
-  if (signals?.hasProductSchema) console.log('Product schema:', page.url);
-}
 ```
 
-### CrawlConfig reference
+### Configuration Reference
 
-All settings have safe defaults for polite, scope-aware crawling. Construct via `CrawlConfig.builder(seedUrl)` - all validation happens at `build()` time.
+`CrawlConfig.builder(seedUrl)` options:
 
-#### Scope
-
-| Builder method | Default | Description |
+| Setting | Default | Description |
 |---|---|---|
-| `maxDepth(n)` | `Infinity` | Maximum link hops from seed. `0` = seed only. |
-| `crawlSubdomains(bool)` | `false` | Follow links into subdomains. |
-| `includePattern(str)` | _(none)_ | Only crawl URLs containing this substring. Multiple calls are OR-ed. |
-| `excludePattern(str)` | _(none)_ | Skip URLs containing this substring. Takes precedence over include. |
-| `checkExternalLinks(bool)` | `false` | HEAD-check external links; include their status in snapshots. |
-
-#### Concurrency
-
-| Builder method | Default | Description |
-|---|---|---|
-| `workers(n)` | `4` | Number of concurrent fetch promises. |
-
-#### HTTP / transport
-
-| Builder method | Default | Description |
-|---|---|---|
-| `timeoutMs(ms)` | `10000` | Per-request HTTP timeout. |
-| `maxBodyBytes(n)` | `5242880` (5 MB) | Response body cap. Larger bodies are truncated; snapshot is still emitted. |
-| `maxRedirects(n)` | `10` | Maximum redirect hops per URL. |
-| `userAgent(str)` | Chrome UA | User-agent string sent with every request. |
-| `renderJs(bool)` | `false` | Enable JS rendering (requires `PlaywrightFetchBackend`). |
-| `postNavigationDelayMs(ms)` | `0` | Time to wait after page load before capturing DOM (useful for SPAs). |
-
-#### Traffic shaping
-
-| Builder method | Default | Description |
-|---|---|---|
-| `requestDelayMs(ms)` | `500` | Base delay between requests to the same host. `0` disables. |
-| `jitterPct(pct)` | `20` | ±% randomisation applied to every delay. |
-| `retryDelayMs(ms)` | `2000` | Base back-off for 429 retries (doubles each attempt). |
-| `maxRetries(n)` | `5` | Maximum 429 retries before a URL is abandoned. |
-
-#### Web standards
-
-| Builder method | Default | Description |
-|---|---|---|
-| `respectRobotsTxt(bool)` | `true` | Fetch and respect `robots.txt` for every domain. |
-| `seedFromSitemap(bool)` | `true` | Pre-load the frontier from `sitemap.xml`. |
-| `detectDuplicates(bool)` | `true` | Flag pages whose body matches an earlier page. |
-| `stripSessionParams(bool)` | `true` | Strip `PHPSESSID`, `JSESSIONID`, etc. from URLs. |
-
-#### Security
-
-| Builder method | Default | Description |
-|---|---|---|
-| `ssrfPolicy(policy)` | `BLOCK_PRIVATE` | Block requests to private/loopback IP ranges. |
+| `maxDepth(n)` | `Infinity` | Maximum link depth from seed URL (`0` = seed only). |
+| `crawlSubdomains(bool)` | `false` | Follow links across subdomains. |
+| `includePattern(str)` | `none` | Substring match required for discovered URLs. |
+| `excludePattern(str)` | `none` | Substring filter skipping matching URLs. |
+| `workers(n)` | `4` | Concurrency limit for fetch workers. |
+| `timeoutMs(ms)` | `10000` | Per-request timeout in milliseconds. |
+| `maxBodyBytes(n)` | `5242880` | Maximum response payload size (5 MB default). |
+| `maxRedirects(n)` | `10` | Maximum redirect hops before failure. |
+| `requestDelayMs(ms)` | `500` | Per-host throttling delay. |
+| `jitterPct(pct)` | `20` | Random jitter percentage on request delays. |
+| `respectRobotsTxt(bool)` | `true` | Fetch and adhere to domain `robots.txt`. |
+| `seedFromSitemap(bool)` | `true` | Pre-populate queue from discovered `sitemap.xml`. |
+| `detectDuplicates(bool)` | `true` | SHA-256 body deduplication. |
+| `stripSessionParams(bool)`| `true` | Strip session identifiers and tracking parameters. |
+| `ssrfPolicy(policy)` | `BLOCK_PRIVATE` | SSRF defense mode (`BLOCK_PRIVATE` or `ALLOW_ALL`). |
 
 ---
 
-## MCP server (`modules/mcp-server/`)
+## MCP Server (`modules/mcp-server/`)
 
-Exposes the crawl engine as tools for Claude and any MCP-compatible client.
+Exposes crawl and inspection tools over Model Context Protocol (MCP) Streamable HTTP transport.
 
-### Start
+### Configuration
 
-```bash
-node modules/mcp-server/dist/index.js
-```
+| Environment Variable | Default | Description |
+|---|---|---|
+| `PORT` | `3001` | Server listening port |
+| `MCP_API_KEY` | _(none)_ | Optional Bearer token for endpoint authorization |
+| `SCRATCH_DIR` | `./scratch` | Directory for temporary runtime outputs |
+| `MANIFESTS_DIR`| `./manifests` | Directory for saved crawl manifests |
+| `DATA_DIR` | `./data` | Directory for persistent storage |
 
-### Tools
+### Available Tools
 
 | Tool | Description |
 |---|---|
-| `crawl` | Crawl a site from a seed URL. Returns a manifest of page snapshots with SEO and link data. |
-| `fetch_page` | Fetch a single URL and return its SEO data, article content, and links. |
-| `fetch_api` | Walk an offset-paginated JSON API and return the collected results. |
-| `parse_sitemap` | Parse a sitemap.xml and return all discovered URLs. |
-| `search_manifest` | Search a saved crawl manifest by keyword, URL pattern, or status code. |
-| `summarize_manifest` | Return aggregate stats for a saved manifest (page count, word counts, status distribution). |
-| `analyze_links` | Analyze the link graph from a manifest - internal, external, broken. |
-| `analyze_meta` | Extract canonical, robots, Open Graph, and hreflang signals from a manifest. |
-| `analyze_headings` | Audit heading structure (H1-H6) across a manifest for SEO issues. |
-| `analyze_images` | Audit images for missing alt text and other accessibility signals. |
-| `analyze_schema` | Extract and summarize JSON-LD schema blocks across a manifest. |
-| `compare_manifests` | Diff two crawl manifests to surface new, removed, and changed pages. |
-| `find_orphans` | Identify pages with no internal inbound links. |
-
-### Extractors
-
-The MCP server ships two built-in extractors registered on every crawl:
-
-- **`SeoExtractor`** - title, meta description, H1, word count, article word count, excerpt
-- **`LinkExtractor`** - internal and external links with anchor text
+| `crawl` | Crawls target domain and returns structured manifest snapshots. |
+| `fetch_page` | Fetches a single URL with SEO, heading, metadata, and link parsing. |
+| `fetch_api` | Paginates through REST API endpoints and collects records. |
+| `parse_sitemap` | Fetches and extracts URLs from `sitemap.xml`. |
+| `search_manifest` | Filters crawl manifests by query, pattern, or status code. |
+| `summarize_manifest` | Aggregates page counts, status distributions, and word counts. |
+| `analyze_links` | Generates internal/external link graph and flags broken links. |
+| `analyze_meta` | Audits canonical tags, robots directives, and Open Graph tags. |
+| `analyze_headings` | Audits H1–H6 hierarchy, missing tags, and ordering issues. |
+| `analyze_images` | Audits images for alt text, size, and missing attributes. |
+| `analyze_schema` | Parses structured JSON-LD and microdata blocks. |
+| `compare_manifests` | Computes diffs between two manifest runs (added/removed/modified). |
+| `find_orphans` | Identifies crawl pages with zero inbound links. |
 
 ---
 
-## Chrome pipe (`modules/chrome-pipe/`)
+## Security Model
 
-A sample MCP module that inverts the usual architecture: instead of the crawler fetching pages, Claude in Chrome navigates and provides the raw HTML, and this module handles all extraction. No outbound HTTP requests are made - it is a pure extraction layer.
-
-This pattern is useful when you need a real browser session (for JS-rendered pages, authenticated content, or bot-protected sites) but still want structured extraction output rather than raw HTML.
-
-### How it works
-
-```
-Claude in Chrome              chrome-pipe MCP server
-      │                              │
-      │  navigate to URL             │
-      │  get_page_text() → html      │
-      │ ─────────────────────────── >│
-      │                    extract_page(url, html)
-      │                              │
-      │  < ────────────────────────── │
-      │  PageSnapshot (seo, links,   │
-      │  headings, schema, og)       │
-```
-
-### Tools
-
-| Tool | Description |
-|---|---|
-| `extract_page` | Run the full extractor stack on a URL + HTML string. Returns SEO signals, links, headings, JSON-LD schema, and Open Graph data. |
-| `extract_seo` | SEO signals only - title, description, canonical, robots, H1, word count, article word count, excerpt. |
-| `extract_links` | Internal and external links with anchor text and rel attributes. |
-| `batch_extract` | Run extraction on up to 100 pages at once. Returns a manifest array. |
-
-### Claude Desktop config
-
-```json
-{
-  "mcpServers": {
-    "chrome-pipe": {
-      "command": "node",
-      "args": ["modules/chrome-pipe/dist/index.js"]
-    }
-  }
-}
-```
-
-### Example Claude workflow
-
-> "Navigate to https://example.com, get the page HTML, then pass it to chrome-pipe's `extract_page` tool and show me the SEO signals and heading structure."
-
-Claude in Chrome handles the fetch. Chrome-pipe handles the extraction. The two MCP servers never talk to each other directly - Claude is the coordinator.
-
----
-
-## Architecture
-
-```
-CrawlEngine.crawl()                          AsyncIterable<PageSnapshot>
-  │
-  ├── seed frontier (sitemap + seed URL)
-  │
-  └── dispatch loop
-        promise pool (≤ workers concurrent tasks)
-        each worker:
-          robots check
-          rate limit (per-host promise chain)
-          FetchBackend.fetch()
-            └── SsrfGuard.check()     block private IP ranges
-          BodyDeduplicator.isDuplicate()
-          cheerio.parse()             HTML only
-          Extractor[].extract()       user-registered extractors
-          emit PageSnapshot
-          extract links → Frontier.submit()
-```
-
-### Concurrency model
-
-The engine uses an explicit promise pool - the dispatch loop maintains up to `workers` concurrent promises and uses `Promise.race` to wait when the pool is full. This produces the same throughput as a thread-per-task model for I/O-bound crawling.
-
-### Rate limiting (per-host)
-
-Each worker chains onto the previous host promise, serialising requests to the same host at the configured delay with no atomics needed - Node.js's single-threaded event loop guarantees non-interleaved await points.
-
-### 429 backoff
-
-On HTTP 429, the worker releases its pool slot before sleeping and re-acquires it afterwards, so a long backoff does not starve other in-flight URLs.
-
----
-
-## Security
-
-### SSRF protection
-
-Before connecting, every URL's hostname is resolved to IP and checked against blocked ranges:
-
-| Range | Description |
-|---|---|
-| `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` | RFC 1918 private |
-| `127.0.0.0/8` | Loopback |
-| `169.254.0.0/16` | Link-local / AWS instance metadata |
-| `100.64.0.0/10` | Shared address space (RFC 6598) |
-| `::1/128`, `fc00::/7`, `fe80::/10` | IPv6 loopback / unique-local / link-local |
-
-The check fires at every hop of a redirect chain. To opt out for intranet crawling:
-
-```ts
-CrawlConfig.builder('http://intranet.corp/').ssrfPolicy(SsrfPolicy.ALLOW_ALL).build();
-```
-
-*Note: Playwright-based crawls (using `PlaywrightFetchBackend`) also enforce the same SSRF policy for all outgoing requests and sub-resources.*
-
-### Path traversal & sandboxing
-
-User-provided paths for file writes (e.g., `saveToFile` in MCP tools) are processed via `Security.sandboxPath()`. This ensures that:
-- Operations are restricted to the `./scratch/` directory by default.
-- Absolute paths and traversal components (`..`) that escape the sandbox are strictly rejected.
-
-### Prototype pollution mitigation
-
-All extractors that assign dynamic keys from untrusted HTML (Open Graph, Twitter Card, schema blocks) explicitly filter out `__proto__`, `constructor`, and `prototype` before assignment to prevent environment manipulation.
-
-### Body size limit
-
-Response bodies are capped at `maxBodyBytes` (default 5 MB). Truncated bodies still produce a snapshot - `fetchResult.bodyTruncated` is `true`.
-
-### Redirect depth limit
-
-Redirect chains are capped at `maxRedirects` (default 10). Longer chains are treated as errors.
-
----
-
-## URL normalization
-
-Before any URL is enqueued, `UrlNormalizer` applies these rules in order:
-
-1. Reject non-http/https or malformed URLs
-2. Lowercase scheme and host
-3. Remove default ports (`:80` on http, `:443` on https)
-4. Resolve dot segments
-5. Strip fragment (`#...`)
-6. Sort query parameters alphabetically
-7. Strip tracking parameters: `utm_*`, `fbclid`, `gclid`, `gclsrc`, `dclid`, `zanpid`, `mc_cid`, `mc_eid`
-8. Strip session parameters when `stripSessionParams=true`: `jsessionid`, `phpsessid`, `sid`, `sessionid`
-9. Remove trailing slash on non-root, extension-free paths
-
-Normalization is idempotent.
-
----
-
-## Dependencies
-
-### `core/` runtime
-
-| Package | License | Purpose |
-|---|---|---|
-| `cheerio` | MIT | HTML parsing |
-| `robots-parser` | MIT | robots.txt parsing |
-| `undici` | MIT | HTTP client |
-| `playwright-core` | Apache 2.0 | Headless browser for JS rendering |
-
-### `modules/mcp-server/` runtime (adds to core)
-
-| Package | License | Purpose |
-|---|---|---|
-| `@modelcontextprotocol/sdk` | MIT | MCP server protocol |
-| `@mozilla/readability` | Apache 2.0 | Article extraction |
-| `got-scraping` | MIT | TLS fingerprint spoofing for bot bypass |
-| `jsdom` | MIT | DOM simulation for readability |
-| `express` | MIT | HTTP transport for MCP |
-| `zod` | MIT | Schema validation |
-
-### `modules/chrome-pipe/` runtime (standalone)
-
-| Package | License | Purpose |
-|---|---|---|
-| `@modelcontextprotocol/sdk` | MIT | MCP server protocol |
-| `@mozilla/readability` | Apache 2.0 | Article extraction |
-| `cheerio` | MIT | HTML parsing |
-| `jsdom` | MIT | DOM simulation for readability |
-| `zod` | MIT | Schema validation |
-
-All dependencies are permissive open-source (MIT or Apache 2.0). All logic - frontier management, SSRF guard, URL normalizer, extractor framework, and MCP tool definitions - is original code in this repo.
+- **SSRF Defense**: Evaluates hostnames and IP addresses against blocked ranges prior to connection:
+  * IPv4 Private: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`
+  * IPv4 Loopback & Link-Local: `127.0.0.0/8`, `169.254.0.0/16`
+  * IPv4 Shared & Multicast: `100.64.0.0/10`, `224.0.0.0/4`
+  * IPv6 Loopback & Link-Local: `::1/128`, `fe80::/10`, `fc00::/7`
+  * IPv6 Multicast, 6to4 & Teredo: `ff00::/8`, `2002::/16`, `2001:0000::/32`
+  * Socket-Level DNS Resolution: Connection hooks prevent TOCTOU DNS rebinding.
+- **Multi-Root Sandbox Containment**: Path validation ensures disk writes remain bounded within configured directories (`scratch/`, `manifests/`, `data/`).
+- **Session Protections**: MCP session pool enforces a 100-session capacity cap and reaps idle sessions after 30 minutes.
+- **Unprivileged Containers**: Docker images run under non-root user (`pwuser`) with healthchecks.
 
 ---
 
