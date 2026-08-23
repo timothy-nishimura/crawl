@@ -5,12 +5,12 @@ import type { McpServer }         from '@modelcontextprotocol/sdk/server/mcp.js'
 import { writeFileSync, readFileSync } from 'node:fs';
 import {
   HttpClientBackend,
-  PlaywrightFetchBackend,
   FetchResult,
   SsrfPolicy,
   Security,
   RateLimiter,
 } from '@crawl/engine';
+import { PlaywrightFetchBackend } from '@crawl/playwright-backend';
 import { isSearchEngine, isJsGated } from '../lib/domain-hints.js';
 import { TlsFetchBackend }        from '@crawl/tls-backend';
 import {

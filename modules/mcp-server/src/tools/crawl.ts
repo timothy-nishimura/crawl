@@ -4,10 +4,10 @@ import {
   CrawlConfig,
   CrawlEngine,
   HttpClientBackend,
-  PlaywrightFetchBackend,
   SsrfPolicy,
   Security,
 } from '@crawl/engine';
+import { PlaywrightFetchBackend } from '@crawl/playwright-backend';
 import { isSearchEngine, isJsGated } from '../lib/domain-hints.js';
 import type { FetchBackend }     from '@crawl/engine';
 import { FetchRequest, FetchResult } from '@crawl/engine';

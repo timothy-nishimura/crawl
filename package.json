@@ -7,6 +7,7 @@
     "core",
     "modules/extractors",
     "modules/tls-backend",
+    "modules/playwright-backend",
     "modules/chrome-pipe",
     "modules/mcp-test",
     "modules/mcp-server"
@@ -14,7 +15,8 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "check:core": "node scripts/check-core-boundaries.mjs"
   },
   "engines": {
     "node": ">=20.0.0"

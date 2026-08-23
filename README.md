@@ -14,19 +14,21 @@ A modular, embeddable web crawler and MCP server toolkit for TypeScript/Node.js.
 
 ```
 crawl-engine/
-├── core/                   @crawl/engine — core crawling kernel, frontier & security
+├── core/                   @crawl/engine — pure crawling kernel, frontier & security
 ├── modules/
 │   ├── extractors/         @crawl/extractors — SEO, metadata, links, headings, schema, images
 │   ├── tls-backend/        @crawl/tls-backend — TLS-fingerprinted fetch with socket SSRF defense
+│   ├── playwright-backend/ @crawl/playwright-backend — Playwright headless browser transport
 │   ├── chrome-pipe/        @crawl/chrome-pipe — Chrome-assisted extraction pipe
 │   ├── mcp-server/         @crawl/mcp-server — production HTTP/SSE MCP server
 │   └── mcp-test/           @crawl/mcp-test — smoke testing MCP server
+├── scripts/                check-core-boundaries.mjs — automated boundary check
 ├── docker-compose.yml      Docker Compose configuration
 ├── .env.example            Environment configuration template
 └── scratch/                Sandbox output directory (gitignored)
 ```
 
-**Architecture rule:** `@crawl/engine` has zero internal dependencies. Domain packages (`@crawl/extractors`, `@crawl/tls-backend`) build on the engine. User-facing applications (`@crawl/mcp-server`) assemble components into tools.
+**Architecture rule:** `@crawl/engine` has zero internal dependencies and zero framework bloat. Domain packages (`@crawl/extractors`, `@crawl/tls-backend`, `@crawl/playwright-backend`) extend engine interfaces. User-facing applications (`@crawl/mcp-server`) assemble components into tools.
 
 ---
 
@@ -42,6 +44,9 @@ npm install
 
 # Build all packages
 npm run build --workspaces --if-present
+
+# Verify core architectural boundaries
+npm run check:core
 
 # Run all test suites
 npm run test --workspaces --if-present
@@ -74,7 +79,7 @@ import {
   SsrfPolicy,
 } from '@crawl/engine';
 
-const backend = new HttpClientBackend(SsrfPolicy.BLOCK_PRIVATE);
+const backend = HttpClientBackend.create(SsrfPolicy.BLOCK_PRIVATE);
 
 const config = CrawlConfig.builder('https://example.com')
   .maxDepth(3)

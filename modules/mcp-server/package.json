@@ -26,6 +26,7 @@
     "dependencies": {
         "@crawl/engine": "file:../../core",
         "@crawl/extractors": "file:../extractors",
+        "@crawl/playwright-backend": "file:../playwright-backend",
         "@crawl/tls-backend": "file:../tls-backend",
         "@modelcontextprotocol/sdk": "^1.10.0",
         "cheerio": "^1.2.0",

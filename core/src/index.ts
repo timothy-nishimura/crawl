@@ -1,6 +1,5 @@
 // Core engine
 export { CrawlEngine }    from './CrawlEngine.js';
-
 export { CrawlConfig }    from './CrawlConfig.js';
 
 // Value types
@@ -18,7 +17,6 @@ export type { Frontier, FrontierEntry } from './Frontier.js';
 
 // Implementations
 export { HttpClientBackend }  from './HttpClientBackend.js';
-export { PlaywrightFetchBackend } from './PlaywrightFetchBackend.js';
 export { InMemoryFrontier }   from './InMemoryFrontier.js';
 export { CookieJar }          from './CookieJar.js';
 export { RobotsCache }        from './RobotsCache.js';
