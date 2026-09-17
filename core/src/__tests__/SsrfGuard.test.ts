@@ -55,6 +55,12 @@ describe('isPrivateAddress', () => {
   it('blocks 2001:0000:4136:e378:8000:63bf:3fff:fdd2 (Teredo)', () => expect(isPrivateAddress('2001:0000:4136:e378:8000:63bf:3fff:fdd2')).toBe(true));
   it('allows 2001:4860:4860::8888 (Google)', () => expect(isPrivateAddress('2001:4860:4860::8888')).toBe(false));
 
+  // ── Over-block guards (must stay allowed) ────────────────────────────────
+  it('allows 198.20.0.1 (just outside 198.18.0.0/15)', () => expect(isPrivateAddress('198.20.0.1')).toBe(false));
+  it('allows 192.1.0.1 (just outside 192.0.0.0/24)',   () => expect(isPrivateAddress('192.1.0.1')).toBe(false));
+  it('allows 2001:470:1f0b::1 (Hurricane Electric tunnel, not Teredo)',
+    () => expect(isPrivateAddress('2001:470:1f0b::1')).toBe(false));
+
   // ── Multicast ────────────────────────────────────────────────────────────
   it('blocks 224.0.0.1 (IPv4 multicast)',    () => expect(isPrivateAddress('224.0.0.1')).toBe(true));
   it('blocks 239.255.255.250 (IPv4 multicast)', () => expect(isPrivateAddress('239.255.255.250')).toBe(true));
