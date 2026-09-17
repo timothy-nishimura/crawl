@@ -20,6 +20,10 @@ export class Security {
    * @throws Error if the path is unsafe.
    */
   static sandboxPath(userPath: string, sandboxDir?: string | string[]): string {
+    if (!userPath || typeof userPath !== 'string') {
+      throw new Error(`Security Violation: Invalid or empty path provided: ${userPath}`);
+    }
+
     const defaultRoots = [
       process.env['SCRATCH_DIR'] || './scratch',
       process.env['MANIFESTS_DIR'] || './manifests',
