@@ -9,8 +9,9 @@ import {
   SsrfPolicy,
   Security,
   RateLimiter,
+  type FetchBackend,
 } from '@crawl/engine';
-import { PlaywrightFetchBackend } from '@crawl/playwright-backend';
+import { createPlaywrightBackend } from '../lib/playwright-loader.js';
 import { isSearchEngine, isJsGated } from '../lib/domain-hints.js';
 import { TlsFetchBackend }        from '@crawl/tls-backend';
 import {
@@ -206,12 +207,12 @@ export function registerFetchPageTool(server: McpServer): void {
         notes.push(`[Proxy] Routing request through ${proxy}.`);
       }
 
-      let backend: HttpClientBackend | TlsFetchBackend | PlaywrightFetchBackend;
+      let backend: FetchBackend;
       const renderJs = input.renderJs;
       let tlsBypass = false;
 
       if (renderJs) {
-        backend = await PlaywrightFetchBackend.create({ headless: true, proxy });
+        backend = await createPlaywrightBackend({ headless: true, proxy });
       } else if (input.bypassBot) {
         backend = await TlsFetchBackend.create(SsrfPolicy.BLOCK_PRIVATE, proxy);
         tlsBypass = true;

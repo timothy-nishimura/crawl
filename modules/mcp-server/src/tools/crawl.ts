@@ -7,7 +7,7 @@ import {
   SsrfPolicy,
   Security,
 } from '@crawl/engine';
-import { PlaywrightFetchBackend } from '@crawl/playwright-backend';
+import { createPlaywrightBackend } from '../lib/playwright-loader.js';
 import { isSearchEngine, isJsGated } from '../lib/domain-hints.js';
 import type { FetchBackend }     from '@crawl/engine';
 import { FetchRequest, FetchResult } from '@crawl/engine';
@@ -181,7 +181,7 @@ export function registerCrawlTool(server: McpServer): void {
 
       if (input.renderJs) {
         try {
-          backend = await PlaywrightFetchBackend.create({ headless: true });
+          backend = await createPlaywrightBackend({ headless: true });
         } catch (err) {
           return {
             content: [{
