@@ -1,18 +1,25 @@
 /**
  * URL normalisation and resolution utilities.
  *
- * Mirrors the Java `UrlNormalizer`: resolves relative hrefs against a base,
- * optionally strips session parameters, forces lowercase scheme/host,
+ * Resolves relative hrefs against a base, strips session and tracking parameters,
+ * sorts query parameters alphabetically, forces lowercase scheme/host,
  * and removes default ports.
  */
 export class UrlNormalizer {
-  /** Session and marketing tracking parameter names that are stripped when `stripSessionParams` is true. */
-  private static readonly STRIP_PARAMS = new Set([
+  /** Session-parameter names that are stripped when `stripSessionParams` is true. */
+  private static readonly SESSION_PARAMS = new Set([
     'jsessionid', 'phpsessid', 'aspsessionid', 'sessionid',
     'sid', 'cfid', 'cftoken',
-    'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
-    'gclid', 'fbclid', 'mc_eid', 'msclkid', 'dclid', 'yclid',
   ]);
+
+  /** Common marketing / tracking parameters stripped to avoid spider traps. */
+  private static readonly TRACKING_PARAMS = new Set([
+    'fbclid', 'gclid', 'gclsrc', 'dclid', 'zanpid',
+    'mc_cid', 'mc_eid', 'igshid', '_hsenc', '_hsmi',
+    'msclkid', 'yclid',
+  ]);
+
+  private static readonly TRACKING_PREFIXES = ['utm_'];
 
   constructor(private readonly stripSessionParams: boolean = true) {}
 
@@ -41,7 +48,28 @@ export class UrlNormalizer {
       return null;
     }
 
+    return UrlNormalizer.normalizeUrlObject(resolved, this.stripSessionParams);
+  }
+
+  /**
+   * Normalizes an absolute URL string.
+   */
+  static normalize(url: string, stripSessionParams: boolean = true): string | null {
+    if (!url || typeof url !== 'string') return null;
+    const trimmed = url.trim();
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) return null;
+
+    try {
+      const u = new URL(trimmed);
+      return UrlNormalizer.normalizeUrlObject(u, stripSessionParams);
+    } catch {
+      return null;
+    }
+  }
+
+  private static normalizeUrlObject(resolved: URL, stripSessionParams: boolean): string {
     // Normalise scheme and host to lowercase
+    resolved.protocol = resolved.protocol.toLowerCase();
     resolved.hostname = resolved.hostname.toLowerCase();
 
     // Strip default ports
@@ -54,16 +82,18 @@ export class UrlNormalizer {
     resolved.hash = '';
 
     // Strip session and tracking parameters
-    if (this.stripSessionParams) {
-      for (const key of [...resolved.searchParams.keys()]) {
-        const lowerKey = key.toLowerCase();
-        if (UrlNormalizer.STRIP_PARAMS.has(lowerKey) || lowerKey.startsWith('utm_')) {
-          resolved.searchParams.delete(key);
-        }
+    for (const key of [...resolved.searchParams.keys()]) {
+      const lowerKey = key.toLowerCase();
+      if (
+        (stripSessionParams && UrlNormalizer.SESSION_PARAMS.has(lowerKey)) ||
+        UrlNormalizer.TRACKING_PARAMS.has(lowerKey) ||
+        UrlNormalizer.TRACKING_PREFIXES.some(prefix => lowerKey.startsWith(prefix))
+      ) {
+        resolved.searchParams.delete(key);
       }
     }
 
-    // Alphabetically sort query parameters for deterministic frontier deduplication
+    // Sort query parameters alphabetically for canonical deduplication
     resolved.searchParams.sort();
 
     // Normalise path: collapse double-slashes, remove trailing slash
