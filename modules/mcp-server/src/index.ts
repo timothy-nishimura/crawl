@@ -1,5 +1,6 @@
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { timingSafeEqual } from 'node:crypto';
 import express from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -23,6 +24,17 @@ const VERSION = '1.0.0';
 const API_KEY = process.env['MCP_API_KEY'];
 const MAX_SESSIONS = 100;
 const SESSION_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+
+// Constant-time comparison — a plain !== leaks how many leading bytes of a
+// guessed key matched via response-time differences. timingSafeEqual
+// requires equal-length buffers; a length mismatch is itself constant-time
+// safe to short-circuit on (comparing secret *length* is a far smaller leak
+// than comparing contents byte-by-byte with an early exit).
+function safeCompare(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+}
 
 {
   const __filename = fileURLToPath(import.meta.url);
@@ -107,7 +119,7 @@ app.get('/health', (_req, res) => {
 app.all('/mcp', async (req, res) => {
   if (API_KEY) {
     const auth = req.headers['authorization'];
-    if (!auth || auth !== `Bearer ${API_KEY}`) {
+    if (!auth || typeof auth !== 'string' || !safeCompare(auth, `Bearer ${API_KEY}`)) {
       res.status(401).json({
         jsonrpc: '2.0',
         error: { code: -32000, message: 'Unauthorized' },

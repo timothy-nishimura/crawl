@@ -19,6 +19,20 @@ export type FetchResultInstance = ReturnType<typeof FetchResult.fromError>;
 
 export const MAX_REDIRECTS = 10;
 
+// Headers a caller might pass via fetch_page's `headers` param that must
+// never be replayed to a host other than the one the caller originally
+// targeted. SSRF-on-redirect is already covered by each backend's SsrfGuard
+// connector re-checking every hop; this is purely about credential leakage.
+const SENSITIVE_REDIRECT_HEADERS = new Set(['authorization', 'cookie', 'proxy-authorization']);
+
+function stripSensitiveHeaders(headers: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (!SENSITIVE_REDIRECT_HEADERS.has(key.toLowerCase())) out[key] = value;
+  }
+  return out;
+}
+
 // ── Cloudflare / bot-wall detection ───────────────────────────────────────────
 
 export function isCloudflareBlock(result: FetchResultInstance): boolean {
@@ -42,11 +56,12 @@ export async function fetchFollowingRedirects(
   extraHeaders: Record<string, string> = {},
 ): Promise<FetchResultInstance> {
   let currentUrl = startUrl;
+  let headers = { ...extraHeaders };
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const request = FetchRequest.builder(currentUrl)
       .method('GET')
-      .headers(extraHeaders)
+      .headers(headers)
       .timeoutMs(timeoutMs)
       .maxBodyBytes(maxBodyBytes)
       .build();
@@ -60,11 +75,17 @@ export async function fetchFollowingRedirects(
     const location = FetchResult.header(result, 'location');
     if (!location) return result;  // malformed redirect — return the 3xx
 
+    let nextUrl: string;
     try {
-      currentUrl = new URL(location, currentUrl).toString();
+      nextUrl = new URL(location, currentUrl).toString();
     } catch {
       return result;  // unparseable Location — return the 3xx
     }
+
+    if (new URL(nextUrl).origin !== new URL(currentUrl).origin) {
+      headers = stripSensitiveHeaders(headers);
+    }
+    currentUrl = nextUrl;
   }
 
   return FetchResult.fromError(
