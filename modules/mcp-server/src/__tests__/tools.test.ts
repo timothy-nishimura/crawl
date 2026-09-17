@@ -13,6 +13,7 @@ import { registerAnalyzeImages } from '../tools/analyzeImages.js';
 import { registerAnalyzeSchema } from '../tools/analyzeSchema.js';
 import { registerCompareManifests } from '../tools/compareManifests.js';
 import { registerFindOrphans } from '../tools/findOrphans.js';
+import { registerListManifestsTool } from '../tools/listManifests.js';
 
 describe('mcp-server tool registration', () => {
   it('registers all tools without throwing', () => {
@@ -32,6 +33,16 @@ describe('mcp-server tool registration', () => {
       registerAnalyzeSchema(server);
       registerCompareManifests(server);
       registerFindOrphans(server);
+      registerListManifestsTool(server);
+    }).not.toThrow();
+  });
+
+  it('registers crawl and fetch_page with operator opts without throwing', () => {
+    const server = new McpServer({ name: 'test-server', version: '1.0.0' });
+
+    expect(() => {
+      registerCrawlTool(server, { hideRenderJs: true, autoManifest: true });
+      registerFetchPageTool(server, { hideRenderJs: true, autoManifest: true });
     }).not.toThrow();
   });
 });

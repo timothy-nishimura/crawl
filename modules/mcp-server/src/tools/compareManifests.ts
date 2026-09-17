@@ -7,6 +7,7 @@ import {
 } from '../types/CrawlManifest.js';
 import type { SeoData, MetaData } from '@crawl/extractors';
 import { normalizeUrl }     from '../lib/link-graph.js';
+import { resolveManifestName } from '../lib/manifest-paths.js';
 
 // ── Input schema ───────────────────────────────────────────────────────────────
 
@@ -81,7 +82,7 @@ export function registerCompareManifests(server: McpServer): void {
       let crawlManifest, sitemapManifest;
 
       try {
-        crawlManifest = loadManifest(input.crawlManifestPath);
+        crawlManifest = loadManifest(resolveManifestName(input.crawlManifestPath));
       } catch (err) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `Could not load crawl manifest: ${String(err)}` }) }],
@@ -90,7 +91,7 @@ export function registerCompareManifests(server: McpServer): void {
       }
 
       try {
-        sitemapManifest = loadManifest(input.sitemapManifestPath);
+        sitemapManifest = loadManifest(resolveManifestName(input.sitemapManifestPath));
       } catch (err) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `Could not load sitemap manifest: ${String(err)}` }) }],

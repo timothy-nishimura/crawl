@@ -8,6 +8,7 @@ import {
   type SitemapEntry,
 } from '../types/CrawlManifest.js';
 import type { SeoData } from '@crawl/extractors';
+import { resolveManifestName } from '../lib/manifest-paths.js';
 
 // ── Flag computation ───────────────────────────────────────────────────────────
 
@@ -229,7 +230,7 @@ export function registerSearchManifestTool(server: McpServer): void {
       // ── Load manifest ─────────────────────────────────────────────────────
       let manifest;
       try {
-        manifest = loadManifest(input.manifestPath);
+        manifest = loadManifest(resolveManifestName(input.manifestPath));
       } catch (err) {
         return {
           content: [{

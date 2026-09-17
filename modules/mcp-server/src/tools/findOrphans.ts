@@ -6,6 +6,7 @@ import {
   isDiscoveryManifest,
 } from '../types/CrawlManifest.js';
 import { normalizeUrl }     from '../lib/link-graph.js';
+import { resolveManifestName } from '../lib/manifest-paths.js';
 
 const FindOrphansInput = z.object({
   crawlManifestPath: z
@@ -30,8 +31,8 @@ export function registerFindOrphans(server: McpServer): void {
       let crawlManifest, discoveryManifest;
 
       try {
-        crawlManifest = loadManifest(input.crawlManifestPath);
-        discoveryManifest = loadManifest(input.discoveryManifestPath);
+        crawlManifest = loadManifest(resolveManifestName(input.crawlManifestPath));
+        discoveryManifest = loadManifest(resolveManifestName(input.discoveryManifestPath));
       } catch (err) {
         return {
           content: [{ type: 'text', text: JSON.stringify({ error: String(err) }) }],

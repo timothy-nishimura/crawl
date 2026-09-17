@@ -19,6 +19,7 @@ import {
   isCloudflareBlock,
   type FetchResultInstance,
 } from '../lib/fetch-utils.js';
+import { resolveManifestName, autoManifestName } from '../lib/manifest-paths.js';
 
 // ── Input schema ───────────────────────────────────────────────────────────────
 
@@ -148,7 +149,18 @@ const FetchPageInput = z.object({
  * and the full plain-text article content.  For non-HTML responses (JSON,
  * XML, plain text) the raw decoded body is returned without processing.
  */
-export function registerFetchPageTool(server: McpServer): void {
+export interface FetchPageToolOptions {
+  /** Omit the renderJs field from the advertised input schema entirely,
+   * rather than exposing a capability a given build doesn't have wired up. */
+  hideRenderJs?: boolean;
+  /** When the caller doesn't pass saveToFile, default it to
+   * <MANIFESTS_DIR>/<host>-<timestamp>.json. */
+  autoManifest?: boolean;
+}
+
+export function registerFetchPageTool(server: McpServer, opts: FetchPageToolOptions = {}): void {
+  const inputShape = opts.hideRenderJs ? FetchPageInput.omit({ renderJs: true }).shape : FetchPageInput.shape;
+
   server.tool(
     'fetch_page',
 
@@ -161,7 +173,7 @@ export function registerFetchPageTool(server: McpServer): void {
     'require Referer, Authorization, sec-ch-ua, Cookie, or other header fingerprints. ' +
     'Ideal for reading a specific page in full or calling a JSON API endpoint.',
 
-    FetchPageInput.shape,
+    inputShape,
 
     async (args) => {
       const input = FetchPageInput.parse(args);
@@ -190,12 +202,12 @@ export function registerFetchPageTool(server: McpServer): void {
           };
         }
         notes.push(`[PreloadedHtmlFile] Using HTML from ${filePath} (${fileHtml.length.toLocaleString()} bytes) — network fetch skipped.`);
-        return parseAndExtract(input.url, fileHtml, input, notes);
+        return parseAndExtract(input.url, fileHtml, input, notes, opts.autoManifest);
       }
 
       if (input.preloadedHtml) {
         notes.push('[PreloadedHtml] Using caller-supplied HTML — network fetch skipped.');
-        return parseAndExtract(input.url, input.preloadedHtml, input, notes);
+        return parseAndExtract(input.url, input.preloadedHtml, input, notes, opts.autoManifest);
       }
 
       // ── Proxy resolution: explicit param > CRAWL_PROXY env var ──────────
@@ -437,8 +449,9 @@ export function registerFetchPageTool(server: McpServer): void {
         ...(notes.length > 0 && { note: notes.join(' ') }),
       };
 
-      if (input.saveToFile) {
-        const safePath = Security.sandboxPath(input.saveToFile);
+      const saveToFile = input.saveToFile ?? (opts.autoManifest ? autoManifestName(input.url) : undefined);
+      if (saveToFile) {
+        const safePath = Security.sandboxPath(resolveManifestName(saveToFile));
         writeFileSync(safePath, JSON.stringify(finalResult, null, 2), 'utf-8');
         return {
           content: [{
@@ -472,10 +485,11 @@ export type FetchPageInputType = z.infer<typeof FetchPageInput>;
 export type ToolResult = { content: Array<{ type: 'text'; text: string }>; isError?: boolean };
 
 export function parseAndExtract(
-  finalUri: string,
-  html:     string,
-  input:    FetchPageInputType,
-  notes:    string[],
+  finalUri:     string,
+  html:         string,
+  input:        FetchPageInputType,
+  notes:        string[],
+  autoManifest: boolean = false,
 ): ToolResult {
 
   // ── rawHtml passthrough ───────────────────────────────────────────────────
@@ -546,8 +560,9 @@ export function parseAndExtract(
     ...(notes.length > 0 && { note: notes.join(' ') }),
   };
 
-  if (input.saveToFile) {
-    const safePath = Security.sandboxPath(input.saveToFile);
+  const saveToFile = input.saveToFile ?? (autoManifest ? autoManifestName(finalUri) : undefined);
+  if (saveToFile) {
+    const safePath = Security.sandboxPath(resolveManifestName(saveToFile));
     writeFileSync(safePath, JSON.stringify(finalResult, null, 2), 'utf-8');
     return {
       content: [{

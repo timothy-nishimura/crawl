@@ -2,6 +2,7 @@ import { z }              from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { loadManifest, isCrawlManifest } from '../types/CrawlManifest.js';
 import { buildLinkGraph }                from '../lib/link-graph.js';
+import { resolveManifestName }           from '../lib/manifest-paths.js';
 
 // ── Input schema ───────────────────────────────────────────────────────────────
 
@@ -70,7 +71,7 @@ export function registerAnalyzeLinks(server: McpServer): void {
       // ── Load manifest ─────────────────────────────────────────────────────
       let manifest;
       try {
-        manifest = loadManifest(input.manifestPath);
+        manifest = loadManifest(resolveManifestName(input.manifestPath));
       } catch (err) {
         return {
           content: [{

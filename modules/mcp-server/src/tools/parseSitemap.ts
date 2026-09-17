@@ -5,6 +5,7 @@ import {
   FetchRequest,
   FetchResult,
   SsrfPolicy,
+  Security,
 } from '@crawl/engine';
 import { TlsFetchBackend }  from '@crawl/tls-backend';
 import {
@@ -12,6 +13,7 @@ import {
   type SitemapManifest,
   type SitemapEntry,
 } from '../types/CrawlManifest.js';
+import { resolveManifestName } from '../lib/manifest-paths.js';
 
 // ── Input schema ───────────────────────────────────────────────────────────────
 
@@ -214,8 +216,9 @@ export function registerParseSitemapTool(server: McpServer): void {
         urls: entries,
       };
 
+      const resolvedPath = resolveManifestName(input.saveToFile);
       try {
-        saveManifest(input.saveToFile, manifest);
+        saveManifest(resolvedPath, manifest);
       } catch (err) {
         return {
           content: [{
@@ -228,11 +231,12 @@ export function registerParseSitemapTool(server: McpServer): void {
         };
       }
 
+      const safePath = Security.sandboxPath(resolvedPath);
       return {
         content: [{
           type: 'text' as const,
           text: JSON.stringify({
-            savedTo:    input.saveToFile,
+            savedTo:    safePath,
             sitemapUrl: sitemapUrl,
             urlCount:   entries.length,
             usedBypass: rootFetch.usedBypass,

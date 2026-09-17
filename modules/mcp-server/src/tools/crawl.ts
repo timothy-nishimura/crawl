@@ -31,6 +31,7 @@ import {
   type CrawlManifest,
   type CrawlManifestPage,
 } from '../types/CrawlManifest.js';
+import { resolveManifestName, autoManifestName } from '../lib/manifest-paths.js';
 // ── Shared extractor instances (stateless — safe to reuse across requests) ────
 const seoExtractor     = new SeoExtractor();
 const linkExtractor    = new LinkExtractor();
@@ -139,7 +140,24 @@ const CrawlInput = z.object({
  *   Site audit         → crawl(url, saveToFile=path) → search_manifest(path, query)
  *   Content pipeline   → parse_sitemap + search_manifest + fetch_page
  */
-export function registerCrawlTool(server: McpServer): void {
+export interface CrawlToolOptions {
+  /**
+   * Omit the renderJs field from the advertised input schema entirely,
+   * rather than exposing a capability a given build doesn't have wired up
+   * (e.g. an operator bundle without @crawl/playwright-backend).
+   */
+  hideRenderJs?: boolean;
+  /**
+   * When the caller doesn't pass saveToFile, default it to
+   * <MANIFESTS_DIR>/<host>-<timestamp>.json so callers never need to name a
+   * file themselves — pair with list_manifests to find it again.
+   */
+  autoManifest?: boolean;
+}
+
+export function registerCrawlTool(server: McpServer, opts: CrawlToolOptions = {}): void {
+  const inputShape = opts.hideRenderJs ? CrawlInput.omit({ renderJs: true }).shape : CrawlInput.shape;
+
   server.tool(
     'crawl',
 
@@ -148,7 +166,7 @@ export function registerCrawlTool(server: McpServer): void {
     'In file mode (saveToFile) writes a manifest to disk and returns only a summary — ' +
     'use search_manifest to query the file. File mode is strongly recommended for >20 pages.',
 
-    CrawlInput.shape,
+    inputShape,
 
     async (args) => {
       const input = CrawlInput.parse(args);
@@ -302,7 +320,8 @@ export function registerCrawlTool(server: McpServer): void {
         : 'drained';
 
       // ── File mode ─────────────────────────────────────────────────────────
-      if (input.saveToFile) {
+      const saveToFile = input.saveToFile ?? (opts.autoManifest ? autoManifestName(config.seedUrl) : undefined);
+      if (saveToFile) {
         const manifest: CrawlManifest = {
           meta: {
             source:        'crawl',
@@ -326,21 +345,22 @@ export function registerCrawlTool(server: McpServer): void {
           failures: [],   // MCP server crawls don't persist failures — log-level only
         };
 
+        const resolvedPath = resolveManifestName(saveToFile);
         try {
-          saveManifest(input.saveToFile, manifest);
+          saveManifest(resolvedPath, manifest);
         } catch (err) {
           return {
             content: [{
               type: 'text' as const,
               text: JSON.stringify({
-                error: `Failed to write manifest to ${input.saveToFile}: ${String(err)}`,
+                error: `Failed to write manifest to ${saveToFile}: ${String(err)}`,
               }),
             }],
             isError: true,
           };
         }
 
-        const safePath = Security.sandboxPath(input.saveToFile);
+        const safePath = Security.sandboxPath(resolvedPath);
         return {
           content: [{
             type: 'text' as const,

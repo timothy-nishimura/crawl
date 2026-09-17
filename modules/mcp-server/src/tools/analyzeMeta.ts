@@ -2,6 +2,7 @@ import { z }              from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { loadManifest, isCrawlManifest } from '../types/CrawlManifest.js';
 import type { MetaData, SeoData } from '@crawl/extractors';
+import { resolveManifestName } from '../lib/manifest-paths.js';
 
 // ── Input schema ───────────────────────────────────────────────────────────────
 
@@ -62,7 +63,7 @@ export function registerAnalyzeMeta(server: McpServer): void {
 
       let manifest;
       try {
-        manifest = loadManifest(input.manifestPath);
+        manifest = loadManifest(resolveManifestName(input.manifestPath));
       } catch (err) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `Could not load manifest: ${String(err)}` }) }],

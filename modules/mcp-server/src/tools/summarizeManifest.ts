@@ -7,6 +7,7 @@ import {
   type CrawlManifestPage,
 } from '../types/CrawlManifest.js';
 import type { SeoData, LinkData } from '@crawl/extractors';
+import { resolveManifestName } from '../lib/manifest-paths.js';
 
 // ── Input schema ───────────────────────────────────────────────────────────────
 
@@ -94,7 +95,7 @@ export function registerSummarizeManifestTool(server: McpServer): void {
 
       let manifest;
       try {
-        manifest = loadManifest(input.manifestPath);
+        manifest = loadManifest(resolveManifestName(input.manifestPath));
       } catch (err) {
         return {
           content: [{
