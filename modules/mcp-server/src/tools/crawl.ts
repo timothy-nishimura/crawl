@@ -20,6 +20,10 @@ import {
   SchemaExtractor,
   type SeoData,
   type LinkData,
+  type MetaData,
+  type HeadingData,
+  type ImageData,
+  type SchemaData,
 } from '@crawl/extractors';
 import { TlsFetchBackend } from '@crawl/tls-backend';
 import {
@@ -256,8 +260,12 @@ export function registerCrawlTool(server: McpServer): void {
 
       try {
         for await (const snap of crawlIter) {
-          const seo   = snap.extraction(seoExtractor)  as SeoData  | null;
-          const links = snap.extraction(linkExtractor) as LinkData | null;
+          const seo      = snap.extraction(seoExtractor)     as SeoData     | null;
+          const links    = snap.extraction(linkExtractor)    as LinkData    | null;
+          const meta     = snap.extraction(metaExtractor)    as MetaData    | null;
+          const headings = snap.extraction(headingExtractor) as HeadingData | null;
+          const images   = snap.extraction(imageExtractor)   as ImageData   | null;
+          const schema   = snap.extraction(schemaExtractor)  as SchemaData  | null;
 
           const page: CrawlManifestPage = {
             url:         snap.url,
@@ -266,8 +274,12 @@ export function registerCrawlTool(server: McpServer): void {
             isDuplicate: snap.isDuplicate,
           };
 
-          if (seo)   page['mcp.seo']   = seo;
-          if (links) page['mcp.links'] = links;
+          if (seo)      page['mcp.seo']      = seo;
+          if (links)    page['mcp.links']    = links;
+          if (meta)     page['mcp.meta']     = meta;
+          if (headings) page['mcp.headings'] = headings;
+          if (images)   page['mcp.images']   = images;
+          if (schema)   page['mcp.schema']   = schema;
 
           pages.push(page);
 
@@ -298,7 +310,14 @@ export function registerCrawlTool(server: McpServer): void {
             createdAt:     new Date().toISOString(),
             pagesCaptured: summary.pagesCaptured,
             pagesIgnored:  summary.pagesIgnored,
-            extractors:    [seoExtractor.id(), linkExtractor.id()],
+            extractors:    [
+              seoExtractor.id(),
+              linkExtractor.id(),
+              metaExtractor.id(),
+              headingExtractor.id(),
+              imageExtractor.id(),
+              schemaExtractor.id(),
+            ],
             bypassBot:     autoBypass,
             durationMs:    summary.durationMs,
             stoppedReason,
