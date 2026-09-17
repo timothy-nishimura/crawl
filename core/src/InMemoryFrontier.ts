@@ -1,4 +1,5 @@
 import type { Frontier, FrontierEntry } from './Frontier.js';
+import { UrlNormalizer }                 from './UrlNormalizer.js';
 
 /**
  * In-memory BFS frontier backed by a FIFO queue and a seen-URL set.
@@ -18,7 +19,7 @@ export class InMemoryFrontier implements Frontier {
     if (typeof url !== 'string' || !url) {
       throw new Error(`Frontier.submit() received an invalid URL: "${url}"`);
     }
-    const norm = normalizeForSeen(url);
+    const norm = UrlNormalizer.normalize(url) ?? normalizeForSeen(url);
     if (this.seen.has(norm)) return;
     this.seen.add(norm);
     this.queue.push(referrer !== undefined ? { url, depth, referrer } : { url, depth });
