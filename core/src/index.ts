@@ -2,6 +2,25 @@
 export { CrawlEngine }    from './CrawlEngine.js';
 export { CrawlConfig }    from './CrawlConfig.js';
 
+// Shared data contract
+export {
+  type ManifestSource,
+  type CrawlManifestPage,
+  type CrawlStopReason,
+  type PageFailure,
+  type CrawlManifest,
+  type SitemapEntry,
+  type SitemapManifest,
+  type DiscoveryEntry,
+  type DiscoveryManifest,
+  type AnyManifest,
+  saveManifest,
+  loadManifest,
+  isCrawlManifest,
+  isSitemapManifest,
+  isDiscoveryManifest,
+} from './CrawlManifest.js';
+
 // Value types
 export { FetchRequest }   from './FetchRequest.js';
 export { FetchResult }    from './FetchResult.js';

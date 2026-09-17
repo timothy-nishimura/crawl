@@ -36,6 +36,7 @@ const ALLOWED_SRC_FILES = new Set([
   'CookieJar.ts',
   'CrawlConfig.ts',
   'CrawlEngine.ts',
+  'CrawlManifest.ts',
   'CrawlObserver.ts',
   'CrawlSummary.ts',
   'Extractor.ts',
