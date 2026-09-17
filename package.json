@@ -16,9 +16,13 @@
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "check:core": "node scripts/check-core-boundaries.mjs"
+    "check:core": "node scripts/check-core-boundaries.mjs",
+    "build:operator": "node scripts/build-operator-bundle.mjs"
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }
