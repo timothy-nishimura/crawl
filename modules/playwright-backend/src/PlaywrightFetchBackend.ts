@@ -2,6 +2,7 @@ import { chromium, type Browser, type BrowserContext, type Page } from 'playwrig
 import {
   FetchRequest,
   FetchResult,
+  Security,
   SsrfGuard,
   SsrfPolicy,
   type FetchBackend,
@@ -53,13 +54,24 @@ export class PlaywrightFetchBackend implements FetchBackend {
 
   async fetch(request: FetchRequest): Promise<FetchResult> {
     const start = Date.now();
+
+    // 1. SSRF check before opening the browser to the URL. Runs before
+    // init() so a blocked URL never launches Chromium at all, and the
+    // guard is testable without a browser.
+    try {
+      Security.validateUrl(request.uri);
+      await SsrfGuard.check(new URL(request.uri).hostname, this.ssrfPolicy);
+    } catch (err) {
+      return FetchResult.fromError(
+        request.uri,
+        err instanceof Error ? err : new Error(String(err)),
+      );
+    }
+
     await this.init();
 
     let page: Page | null = null;
     try {
-      // 1. SSRF check before opening the browser to the URL
-      await SsrfGuard.check(request.uri, this.ssrfPolicy);
-
       page = await this.context!.newPage();
 
       // Set timeout
@@ -79,7 +91,8 @@ export class PlaywrightFetchBackend implements FetchBackend {
       await page.route('**/*', async (route) => {
         const url = route.request().url();
         try {
-          await SsrfGuard.check(url, this.ssrfPolicy);
+          Security.validateUrl(url);
+          await SsrfGuard.check(new URL(url).hostname, this.ssrfPolicy);
           await route.continue();
         } catch (err) {
           console.warn(`[Playwright-SSRF] Blocking ${url}: ${err instanceof Error ? err.message : String(err)}`);
